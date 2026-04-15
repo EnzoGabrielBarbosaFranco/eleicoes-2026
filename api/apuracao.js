@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'; // Se estiver usando Node 18+ no Vercel, o fetch já é nativo e você pode remover esta linha.
-
 export default async function handler(req, res) {
     try {
         const { turno = '1', cargo = '1', uf = 'br' } = req.query || {};

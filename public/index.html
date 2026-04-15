@@ -414,6 +414,9 @@
             document.getElementById('ultima-atualizacao').innerText = "Buscando dados...";
             const url = `/api/apuracao?turno=${turno}&cargo=${cargo}&uf=${uf}`;
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Erro na comunicação com a API: ${response.status}`);
+            }
             const data = await response.json();
 
             if (data.erro) {
