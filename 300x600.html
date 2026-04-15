@@ -387,6 +387,19 @@
     </div>
 
    <script>
+    function toggleResumo() {
+        const bloco = document.getElementById('bloco-resumo');
+        const txt = document.getElementById('txt-toggle');
+        
+        bloco.classList.toggle('oculto');
+        
+        if (bloco.classList.contains('oculto')) {
+            txt.innerText = '▾ Ver brancos, nulos e abstenções';
+        } else {
+            txt.innerText = '▴ Ocultar brancos, nulos e abstenções';
+        }
+    }
+
     async function atualizarApuracao() {
         const selectTurno = document.getElementById('select-turno');
         const selectCargo = document.getElementById('select-cargo');
