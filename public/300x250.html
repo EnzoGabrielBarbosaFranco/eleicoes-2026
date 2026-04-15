@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Apuração 2026 - 300x250</title>
+    <style>
+        :root {
+            --primary: #003366; 
+            --primary-light: #004080;
+            --accent: #27ae60;  
+            --bg-light: #f4f6f8;
+            --text-dark: #202124;
+            --text-muted: #5f6368;
+            --border-color: #dadce0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #ffffff; 
+            display: flex; 
+            justify-content: center;
+            align-items: center; 
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+            height: 100vh;
+        }
+
+        /* --- WIDGET PRINCIPAL (FIXO 300x250) --- */
+        .widget-container {
+            background: white;
+            width: 300px;
+            height: 250px; 
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .widget-header {
+            background: var(--primary);
+            color: white;
+            padding: 8px 10px; /* Padding super otimizado */
+            flex-shrink: 0;
+        }
+
+        .widget-header h2 { 
+            margin: 0 0 6px 0; 
+            font-size: 0.85rem; 
+            font-weight: 800; 
+            text-align: center;
+            letter-spacing: -0.2px;
+        }
+
+        /* --- FILTROS (2 COLUNAS PARA ECONOMIZAR ESPAÇO) --- */
+        .controles {
+            display: grid;
+            grid-template-columns: 85px 1fr; /* Turno menor, Cargo maior */
+            gap: 4px;
+        }
+
+        select {
+            width: 100%;
+            padding: 3px 6px; 
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 0.75rem; 
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 4px top 50%;
+            background-size: 6px auto;
+        }
+
+        .select-full {
+            grid-column: 1 / -1; /* Faz o UF ocupar as duas colunas */
+        }
+
+        select:hover { background-color: rgba(0, 0, 0, 0.3); }
+        select option { color: #333; background: #fff; }
+
+        /* --- STATUS GERAL --- */
+        .status-geral {
+            padding: 6px 10px;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .info-topo { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-weight: 800; 
+            margin-bottom: 4px; 
+            font-size: 0.8rem; 
+        }
+
+        /* Data agora fica na mesma linha que a palavra "Apuradas" */
+        .data-hora { 
+            font-size: 0.6rem; 
+            color: var(--text-muted); 
+            font-weight: 500;
+            margin-left: 6px;
+        }
+
+        .barra-progresso-total {
+            background: #e8eaed;
+            height: 5px; 
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .preenchimento-total {
+            background: var(--accent);
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        /* --- BOTÃO OCULTAR/MOSTRAR RESUMO --- */
+        .resumo-toggle {
+            background: #f1f3f5;
+            text-align: center;
+            padding: 4px; 
+            font-size: 0.65rem; 
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-top: 1px solid var(--border-color);
+            transition: background 0.2s;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .resumo-toggle:hover {
+            background: #e2e5e9;
+        }
+
+        /* --- RESUMO DE VOTOS (2x2 GRID ULTRA COMPACTO) --- */
+        .resumo-votos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 0;
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--border-color);
+            padding: 4px 0;
+            flex-shrink: 0;
+        }
+
+        .resumo-votos.oculto {
+            display: none; 
+        }
+
+        .resumo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .resumo-item:nth-child(odd) {
+            border-right: 1px solid var(--border-color);
+        }
+
+        .resumo-item span:first-child {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .resumo-valor {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.7rem; 
+            line-height: 1.1;
+            white-space: pre-line; 
+        }
+
+        /* --- LISTA DE CANDIDATOS (AGORA COM MAIS ESPAÇO) --- */
+        .lista-candidatos { 
+            padding: 8px 10px; 
+            flex: 1; 
+            overflow-y: auto; 
+            background: #fdfdfd;
+        }
+
+        .lista-candidatos::-webkit-scrollbar { width: 3px; }
+        .lista-candidatos::-webkit-scrollbar-track { background: #f1f1f1; }
+        .lista-candidatos::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+
+        .candidato-card { 
+            margin-bottom: 8px; 
+            padding: 10px; /* Mais área de respiro interna */
+            background: #ffffff; 
+            border: 1px solid var(--border-color); 
+            border-radius: 6px;
+        }
+
+        .candidato-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; 
+            margin-bottom: 6px;
+        }
+
+        .candidato-flex {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1; 
+            min-width: 0; 
+        }
+
+        .foto-container {
+            width: 40px; /* Foto maior que na versão anterior */
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid #eaeaea;
+            flex-shrink: 0;
+            background: #f8f9fa;
+        }
+
+        .foto-cand { width: 100%; height: 100%; object-fit: cover; }
+
+        .info-textos {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0; 
+        }
+
+        .nome-cand { 
+            font-weight: 800; 
+            font-size: 0.9rem; /* Fonte maior */
+            color: var(--text-dark); 
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .partido-tag { 
+            font-weight: 400; 
+            font-size: 0.7rem; 
+            color: var(--text-muted); 
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .percentual { 
+            font-size: 1.15rem; /* Destaque maior na porcentagem */
+            font-weight: 900; 
+            color: var(--primary); 
+            text-align: right;
+            padding-left: 5px;
+        }
+
+        .barra-cand-bg {
+            background: #f1f3f5;
+            height: 6px; 
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .barra-cand-fill {
+            background: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .votos-absolutos {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .eleito-badge {
+            display: inline-block; 
+            font-size: 0.55rem;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .badge-verde { background: var(--accent); color: white; }
+        .badge-amarelo { background: #f39c12; color: white; }
+
+        .loading-overlay { text-align: center; padding: 15px; color: var(--text-muted); font-style: italic; font-size: 0.75rem; }
+
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="widget-header">
+            <h2>Apuração 2026</h2>
+            <div class="controles">
+                <select id="select-turno" onchange="atualizarApuracao()">
+                    <option value="1">1º Turno</option>
+                    <option value="2">2º Turno</option>
+                </select>
+                <select id="select-cargo" onchange="atualizarApuracao()">
+                    <option value="1">Presidente</option>
+                    <option value="3">Governador</option>
+                    <option value="5">Senador</option>
+                    <option value="6">Deputado Federal</option>
+                    <option value="7">Deputado Estadual</option>
+                </select>
+                <select id="select-uf" class="select-full" onchange="atualizarApuracao()">
+                    <option value="br">Brasil (Total)</option>
+                    <option value="ac">Acre</option>
+                    <option value="al">Alagoas</option>
+                    <option value="ap">Amapá</option>
+                    <option value="am">Amazonas</option>
+                    <option value="ba">Bahia</option>
+                    <option value="ce">Ceará</option>
+                    <option value="df">Distrito Federal</option>
+                    <option value="es">Espírito Santo</option>
+                    <option value="go">Goiás</option>
+                    <option value="ma">Maranhão</option>
+                    <option value="mt">Mato Grosso</option>
+                    <option value="ms">Mato Grosso do Sul</option>
+                    <option value="mg">Minas Gerais</option>
+                    <option value="pa">Pará</option>
+                    <option value="pb">Paraíba</option>
+                    <option value="pr">Paraná</option>
+                    <option value="pe">Pernambuco</option>
+                    <option value="pi">Piauí</option>
+                    <option value="rj">Rio de Janeiro</option>
+                    <option value="rn">Rio Grande do Norte</option>
+                    <option value="rs">Rio Grande do Sul</option>
+                    <option value="ro">Rondônia</option>
+                    <option value="rr">Roraima</option>
+                    <option value="sc">Santa Catarina</option>
+                    <option value="sp">São Paulo</option>
+                    <option value="se">Sergipe</option>
+                    <option value="to">Tocantins</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="status-geral">
+            <div class="info-topo">
+                <div>Apuradas <span id="ultima-atualizacao" class="data-hora"></span></div>
+                <span id="txt-percurso">0,00%</span>
+            </div>
+            <div class="barra-progresso-total">
+                <div id="barra-percurso" class="preenchimento-total"></div>
+            </div>
+        </div>
+
+        <div class="resumo-toggle" onclick="toggleResumo()">
+            <span id="txt-toggle">▾ Ver brancos, nulos e abstenções</span>
+        </div>
+
+        <div id="bloco-resumo" class="resumo-votos oculto">
+            <div class="resumo-item">
+                <span>Válidos</span>
+                <span class="resumo-valor" id="votos-validos">--</span>
+            </div>
+            <div class="resumo-item">
+                <span>Brancos</span>
+                <span class="resumo-valor" id="votos-brancos">--</span>
+            </div>
+            <div class="resumo-item">
+                <span>Nulos</span>
+                <span class="resumo-valor" id="votos-nulos">--</span>
+            </div>
+            <div class="resumo-item">
+                <span>Abstenções</span>
+                <span class="resumo-valor" id="votos-abstencoes">--</span>
+            </div>
+        </div>
+
+        <div id="lista-candidatos" class="lista-candidatos">
+            <div class="loading-overlay">Buscando...</div>
+        </div>
+    </div>
+
+  <script>
+    function toggleResumo() {
+        const bloco = document.getElementById('bloco-resumo');
+        const txt = document.getElementById('txt-toggle');
+        
+        bloco.classList.toggle('oculto');
+        
+        if (bloco.classList.contains('oculto')) {
+            txt.innerText = '▾ Ver brancos, nulos e abstenções';
+        } else {
+            txt.innerText = '▴ Ocultar brancos, nulos e abstenções';
+        }
+    }
+
+    async function atualizarApuracao() {
+        const selectTurno = document.getElementById('select-turno');
+        const selectCargo = document.getElementById('select-cargo');
+        const selectUf = document.getElementById('select-uf');
+
+        if (!selectTurno || !selectCargo || !selectUf) return;
+
+        const turno = selectTurno.value;
+        const cargo = selectCargo.value;
+        let uf = selectUf.value;
+        
+        if (cargo === '1') {
+            selectUf.value = 'br'; 
+            uf = 'br';
+            selectUf.disabled = true; 
+        } else {
+            selectUf.disabled = false; 
+            if (uf === 'br') {
+                selectUf.value = 'sp'; 
+                uf = 'sp';
+            }
+        }
+
+        try {
+            document.getElementById('ultima-atualizacao').innerText = "(Atualizando...)";
+            const url = `/api/apuracao?turno=${turno}&cargo=${cargo}&uf=${uf}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.erro) {
+                document.getElementById('txt-percurso').innerText = "0%";
+                document.getElementById('barra-percurso').style.width = "0%";
+                document.getElementById('ultima-atualizacao').innerText = ""; 
+                document.getElementById('lista-candidatos').innerHTML = `<p style="text-align:center; padding:10px; font-weight:bold; color:#d63031; font-size:0.8rem;">${data.mensagem}</p>`;
+                return;
+            }
+
+            let percursoCss = data.percurso.replace(',', '.'); 
+            document.getElementById('barra-percurso').style.width = `${percursoCss}%`;
+
+            let textoPercurso = data.percurso.endsWith(',00') 
+                ? data.percurso.replace(',00', '') 
+                : data.percurso;
+            
+            document.getElementById('txt-percurso').innerText = `${textoPercurso}%`;
+            
+            // Extrai apenas a hora para ficar bem curto no topo: ex "(12:07)"
+            let horaCurta = data.atualizacao.split('às')[1] ? data.atualizacao.split('às')[1].trim().substring(0, 5) : data.atualizacao;
+            document.getElementById('ultima-atualizacao').innerText = `(${horaCurta})`;
+
+            // Injeta os votos no resumo oculto
+            document.getElementById('votos-validos').innerText = `${data.resumo.pctValidos}%`;
+            document.getElementById('votos-brancos').innerText = `${data.resumo.pctBrancos}%`;
+            document.getElementById('votos-nulos').innerText = `${data.resumo.pctNulos}%`;
+            document.getElementById('votos-abstencoes').innerText = `${data.resumo.pctAbstencoes}%`;
+
+            let candidatosParaRenderizar = [...data.candidatos];
+
+            if (turno === '1' && (cargo === '1' || cargo === '3')) {
+                const temAlguemEleito = candidatosParaRenderizar.some(c => c.eleito);
+                const apiJaMarcouSegundoTurno = candidatosParaRenderizar.some(c => c.segundoTurno);
+                
+                if (!temAlguemEleito && !apiJaMarcouSegundoTurno && candidatosParaRenderizar.length >= 2) {
+                    const top2 = candidatosParaRenderizar.slice(0, 2);
+                    top2.sort((a, b) => a.nome.localeCompare(b.nome));
+                    top2[0].passouTurno = true;
+                    top2[1].passouTurno = true;
+                    candidatosParaRenderizar = [...top2, ...candidatosParaRenderizar.slice(2)];
+                }
+            }
+
+            const lista = document.getElementById('lista-candidatos');
+            lista.innerHTML = ''; 
+
+            candidatosParaRenderizar.forEach(cand => {
+                let badgeHTML = '';
+                let percentualVotos = parseFloat(cand.votos);
+
+                if (turno === '1' && (cargo === '1' || cargo === '3')) {
+                    if (cand.eleito && percentualVotos > 50) {
+                        badgeHTML = '<span class="eleito-badge badge-verde">Eleito 1º T</span>';
+                    } else if (cand.segundoTurno || cand.passouTurno || (cand.eleito && percentualVotos <= 50)) {
+                        badgeHTML = '<span class="eleito-badge badge-amarelo">Vai p/ 2º T</span>';
+                    }
+                } else {
+                    if (cand.eleito) {
+                        badgeHTML = '<span class="eleito-badge badge-verde">Eleito</span>';
+                    }
+                }
+
+                lista.innerHTML += `
+                    <div class="candidato-card">
+                        <div class="candidato-info">
+                            <div class="candidato-flex">
+                                <div class="foto-container">
+                                    <img src="${cand.foto}" 
+                                        class="foto-cand" 
+                                        onerror="this.src='https://via.placeholder.com/40?text=👤'" 
+                                        alt="${cand.nome}">
+                                </div>
+                                <div class="info-textos">
+                                    <span class="nome-cand">${cand.nome}</span>
+                                    <span class="partido-tag">${cand.partido}</span>
+                                    ${badgeHTML}
+                                </div>
+                            </div>
+                            <div class="percentual">${cand.votos}%</div>
+                        </div>
+                        <div class="barra-cand-bg">
+                            <div class="barra-cand-fill" style="width: ${cand.votos}%"></div>
+                        </div>
+                        <div class="votos-absolutos">
+                            <span>${cand.total} votos</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+        } catch (error) {
+            console.error("Erro no Front-end:", error);
+            document.getElementById('ultima-atualizacao').innerText = "(Erro)";
+        }
+    }
+
+    function sugerirLocalizacao() {
+        atualizarApuracao();
+    }
+
+    sugerirLocalizacao();
+    setInterval(atualizarApuracao, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Apuração 2026 - Horizontal</title>
+    <style>
+        :root {
+            --primary: #003366; 
+            --accent: #27ae60;  
+            --badge-yellow: #ffcc00;
+            --bg-light: #f4f6f8;
+            --text-dark: #202124;
+            --text-muted: #70757a;
+            --border-color: #dadce0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #e9ecef; 
+            display: flex; 
+            justify-content: center;
+            align-items: center; 
+            margin: 0;
+            padding: 20px;
+            color: var(--text-dark);
+            height: 100vh;
+        }
+
+        /* --- WIDGET PRINCIPAL (HORIZONTAL) --- */
+        .widget-horizontal {
+            background: var(--bg-light);
+            width: 100%;
+            max-width: 1200px; 
+            height: 90px; 
+            display: flex;
+            align-items: stretch; 
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        /* --- 1. BLOCO AZUL (CABEÇALHO E FILTROS) --- */
+        .bloco-header {
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 220px;
+            flex-shrink: 0;
+        }
+
+        .bloco-header h2 { 
+            margin: 0 0 8px 0; 
+            font-size: 1rem; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controles {
+            display: flex;
+            gap: 5px;
+        }
+
+        select {
+            padding: 4px 6px; 
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(0, 0, 0, 0.25);
+            color: white;
+            font-size: 0.75rem; 
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px top 50%;
+            background-size: 8px auto;
+            padding-right: 20px;
+        }
+        
+        .sel-turno { width: 45px; padding-right: 15px; } 
+        .sel-cargo { flex: 1; }
+        .sel-uf { width: 55px; }
+
+        /* --- 2. BLOCO BRANCO (STATUS) --- */
+        .bloco-status {
+            background: white;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 190px;
+            flex-shrink: 0;
+        }
+
+        .status-topo { 
+            display: flex; 
+            justify-content: space-between; 
+            font-weight: 800; 
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .status-topo span:first-child { color: var(--text-dark); }
+        .status-topo span:last-child { color: var(--text-dark); }
+
+        .barra-total-bg {
+            background: #e8eaed;
+            height: 6px; 
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .barra-total-fill {
+            background: var(--accent);
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .data-hora { 
+            font-size: 0.65rem; 
+            color: var(--text-muted); 
+            font-weight: 500;
+        }
+
+        /* --- 3. CARROSSEL DE CANDIDATOS --- */
+        .bloco-carrossel {
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            gap: 12px;
+            padding: 0 15px;
+            flex: 1;
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+        }
+        .bloco-carrossel::-webkit-scrollbar { display: none; }
+
+        .card-cand {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            min-width: 250px; /* Aumentado para caber a foto */
+            height: 66px; 
+            padding: 8px 12px;
+            display: flex;
+            align-items: center; /* Centraliza a foto com o texto */
+            gap: 10px;
+            position: relative; 
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .foto-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid #eaeaea;
+            flex-shrink: 0;
+            background: #f8f9fa;
+        }
+
+        .foto-cand { width: 100%; height: 100%; object-fit: cover; }
+
+        .info-cand {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .card-nome {
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 110px;
+        }
+
+        .card-pct {
+            font-weight: 900;
+            font-size: 1rem;
+            color: var(--primary);
+            margin-left: 5px;
+        }
+
+        .card-barra-bg {
+            background: #e8eaed;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .card-barra-fill {
+            background: var(--primary);
+            height: 100%;
+            width: 0%;
+        }
+
+        .card-votos {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .eleito-badge {
+            position: absolute;
+            bottom: -8px;
+            right: 12px;
+            font-size: 0.5rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .badge-amarelo { background: var(--badge-yellow); color: #000; }
+        .badge-verde { background: var(--accent); color: #fff; }
+
+        .loading-msg { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+
+        /* Responsividade para telas menores que o banner completo */
+        @media (max-width: 768px) {
+            .widget-horizontal { flex-direction: column; height: auto; }
+            .bloco-header { align-items: center; padding: 10px; }
+            .controles { width: 100%; justify-content: center; }
+            .bloco-status { border-right: none; border-bottom: 1px solid var(--border-color); align-items: center; }
+            .status-topo { width: 100%; max-width: 300px; }
+            .barra-total-bg { width: 100%; max-width: 300px; }
+            .bloco-carrossel { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="widget-horizontal">
+        <div class="bloco-header">
+            <h2>Apuração 2026</h2>
+            <div class="controles">
+                <select id="select-turno" class="sel-turno" onchange="atualizarApuracao()">
+                    <option value="1">1º</option>
+                    <option value="2">2º</option>
+                </select>
+                <select id="select-cargo" class="sel-cargo" onchange="atualizarApuracao()">
+                    <option value="1">Presidente</option>
+                    <option value="3">Governador</option>
+                    <option value="5">Senador</option>
+                    <option value="6">Dep. Federal</option>
+                    <option value="7">Dep. Estadual</option>
+                </select>
+                <select id="select-uf" class="sel-uf" onchange="atualizarApuracao()">
+                    <option value="br">BR</option>
+                    <option value="ac">AC</option>
+                    <option value="al">AL</option>
+                    <option value="ap">AP</option>
+                    <option value="am">AM</option>
+                    <option value="ba">BA</option>
+                    <option value="ce">CE</option>
+                    <option value="df">DF</option>
+                    <option value="es">ES</option>
+                    <option value="go">GO</option>
+                    <option value="ma">MA</option>
+                    <option value="mt">MT</option>
+                    <option value="ms">MS</option>
+                    <option value="mg">MG</option>
+                    <option value="pa">PA</option>
+                    <option value="pb">PB</option>
+                    <option value="pr">PR</option>
+                    <option value="pe">PE</option>
+                    <option value="pi">PI</option>
+                    <option value="rj">RJ</option>
+                    <option value="rn">RN</option>
+                    <option value="rs">RS</option>
+                    <option value="ro">RO</option>
+                    <option value="rr">RR</option>
+                    <option value="sc">SC</option>
+                    <option value="sp">SP</option>
+                    <option value="se">SE</option>
+                    <option value="to">TO</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="bloco-status">
+            <div class="status-topo">
+                <span>Urnas Apuradas</span>
+                <span id="txt-percurso">0,00%</span>
+            </div>
+            <div class="barra-total-bg">
+                <div id="barra-percurso" class="barra-total-fill"></div>
+            </div>
+            <span id="ultima-atualizacao" class="data-hora">Conectando...</span>
+        </div>
+
+        <div id="lista-candidatos" class="bloco-carrossel">
+            <span class="loading-msg">Buscando dados no TSE...</span>
+        </div>
+    </div>
+
+  <script>
+    async function atualizarApuracao() {
+        const selectTurno = document.getElementById('select-turno');
+        const selectCargo = document.getElementById('select-cargo');
+        const selectUf = document.getElementById('select-uf');
+
+        if (!selectTurno || !selectCargo || !selectUf) return;
+
+        const turno = selectTurno.value;
+        const cargo = selectCargo.value;
+        let uf = selectUf.value;
+        
+        if (cargo === '1') {
+            selectUf.value = 'br'; 
+            uf = 'br';
+            selectUf.disabled = true; 
+        } else {
+            selectUf.disabled = false; 
+            if (uf === 'br') {
+                selectUf.value = 'sp'; 
+                uf = 'sp';
+            }
+        }
+
+        try {
+            const url = `/api/apuracao?turno=${turno}&cargo=${cargo}&uf=${uf}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.erro) {
+                document.getElementById('txt-percurso').innerText = "0%";
+                document.getElementById('barra-percurso').style.width = "0%";
+                document.getElementById('ultima-atualizacao').innerText = ""; 
+                document.getElementById('lista-candidatos').innerHTML = `<span class="loading-msg" style="color: #d63031;">${data.mensagem}</span>`;
+                return;
+            }
+
+            let percursoCss = data.percurso.replace(',', '.'); 
+            document.getElementById('barra-percurso').style.width = `${percursoCss}%`;
+
+            let textoPercurso = data.percurso.endsWith(',00') 
+                ? data.percurso.replace(',00', '') 
+                : data.percurso;
+            
+            document.getElementById('txt-percurso').innerText = `${textoPercurso}%`;
+            document.getElementById('ultima-atualizacao').innerText = `Atualizado: ${data.atualizacao}`;
+
+            let candidatosParaRenderizar = [...data.candidatos];
+
+            if (turno === '1' && (cargo === '1' || cargo === '3')) {
+                const temAlguemEleito = candidatosParaRenderizar.some(c => c.eleito);
+                const apiJaMarcouSegundoTurno = candidatosParaRenderizar.some(c => c.segundoTurno);
+                
+                if (!temAlguemEleito && !apiJaMarcouSegundoTurno && candidatosParaRenderizar.length >= 2) {
+                    const top2 = candidatosParaRenderizar.slice(0, 2);
+                    top2.sort((a, b) => a.nome.localeCompare(b.nome));
+                    top2[0].passouTurno = true;
+                    top2[1].passouTurno = true;
+                    candidatosParaRenderizar = [...top2, ...candidatosParaRenderizar.slice(2)];
+                }
+            }
+
+            const lista = document.getElementById('lista-candidatos');
+            
+            let scrollPosition = lista.scrollLeft;
+            lista.innerHTML = ''; 
+
+            candidatosParaRenderizar.forEach(cand => {
+                let badgeHTML = '';
+                let percentualVotos = parseFloat(cand.votos);
+
+                if (turno === '1' && (cargo === '1' || cargo === '3')) {
+                    if (cand.eleito && percentualVotos > 50) {
+                        badgeHTML = '<div class="eleito-badge badge-verde">Eleito no 1º T</div>';
+                    } else if (cand.segundoTurno || cand.passouTurno || (cand.eleito && percentualVotos <= 50)) {
+                        badgeHTML = '<div class="eleito-badge badge-amarelo">2º Turno</div>';
+                    }
+                } else {
+                    if (cand.eleito) {
+                        badgeHTML = '<div class="eleito-badge badge-verde">Eleito</div>';
+                    }
+                }
+
+                // Removemos o formatação matemática (toLocaleString) e usamos diretamente cand.total
+                lista.innerHTML += `
+                    <div class="card-cand">
+                        <div class="foto-container">
+                            <img src="${cand.foto}" 
+                                class="foto-cand" 
+                                onerror="this.src='https://via.placeholder.com/40?text=👤'" 
+                                alt="${cand.nome}">
+                        </div>
+                        <div class="info-cand">
+                            <div class="card-topo">
+                                <span class="card-nome" title="${cand.nome}">${cand.nome}</span>
+                                <span class="card-pct">${cand.votos}%</span>
+                            </div>
+                            <div class="card-barra-bg">
+                                <div class="card-barra-fill" style="width: ${cand.votos}%"></div>
+                            </div>
+                            <div class="card-votos">${cand.total} votos</div>
+                        </div>
+                        ${badgeHTML}
+                    </div>
+                `;
+            });
+
+            lista.scrollLeft = scrollPosition;
+
+        } catch (error) {
+            console.error("Erro no Front-end:", error);
+            document.getElementById('ultima-atualizacao').innerText = "Erro na conexão";
+        }
+    }
+
+    const carrossel = document.getElementById('lista-candidatos');
+    let isPaused = false;
+
+    carrossel.addEventListener('mouseenter', () => isPaused = true);
+    carrossel.addEventListener('mouseleave', () => isPaused = false);
+    carrossel.addEventListener('touchstart', () => isPaused = true);
+    carrossel.addEventListener('touchend', () => { setTimeout(() => isPaused = false, 2000); });
+
+    function autoScroll() {
+        if (!isPaused && carrossel.scrollWidth > carrossel.clientWidth) {
+            carrossel.scrollLeft += 1; 
+            
+            if (carrossel.scrollLeft >= (carrossel.scrollWidth - carrossel.clientWidth - 1)) {
+                isPaused = true;
+                setTimeout(() => {
+                    carrossel.scrollLeft = 0;
+                    isPaused = false;
+                }, 1000);
+            }
+        }
+    }
+
+    setInterval(autoScroll, 35); 
+
+    function sugerirLocalizacao() {
+        atualizarApuracao();
+    }
+
+    sugerirLocalizacao();
+    setInterval(atualizarApuracao, 30000); 
+  </script>
+</body>
+</html>
