@@ -1,5 +1,13 @@
 export default async function handler(req, res) {
-    const { turno = '1', cargo = '1', uf = 'br' } = req.query;
+    if (req.method !== 'GET') {
+        return res.status(405).json({ erro: true });
+    }
+
+    const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
+
+    const turno = searchParams.get('turno') || '1';
+    const cargo = searchParams.get('cargo') || '1';
+    const uf = searchParams.get('uf') || 'br';
 
     if (cargo !== '1' && uf.toLowerCase() === 'br') {
         return res.json({
