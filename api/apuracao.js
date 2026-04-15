@@ -1,48 +1,53 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const app = express();
-
-app.use(cors());
-
-// 1. Aponta o Node para a pasta onde está o Front-end
-const pastaFront = path.join(__dirname, 'public');
-app.use(express.static(pastaFront));
-
-// 2. A sua API de Apuração
-app.get('/api/apuracao', async (req, res) => {
+export default async function handler(req, res) {
     const { turno = '1', cargo = '1', uf = 'br' } = req.query;
 
     if (cargo !== '1' && uf.toLowerCase() === 'br') {
-        return res.json({ erro: true, mensagem: 'Selecione um Estado (UF) para ver os dados deste cargo.' });
+        return res.json({
+            erro: true,
+            mensagem: 'Selecione um Estado (UF) para ver os dados deste cargo.'
+        });
     }
 
     let eleicao = '544';
     if (cargo === '1') {
-        eleicao = (turno === '2') ? '545' : '544'; 
+        eleicao = (turno === '2') ? '545' : '544';
     } else {
-        eleicao = (turno === '2') ? '547' : '546'; 
+        eleicao = (turno === '2') ? '547' : '546';
     }
 
     const cargoFormatado = String(cargo).padStart(4, '0');
     const ufFormatada = uf.toLowerCase();
+
     const url = `https://resultados.tse.jus.br/oficial/ele2022/${eleicao}/dados-simplificados/${ufFormatada}/${ufFormatada}-c${cargoFormatado}-e000${eleicao}-r.json`;
 
     try {
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
+            headers: {
+                'User-Agent': 'Mozilla/5.0',
+                'Accept': 'application/json'
+            }
         });
 
         if (response.status === 404) {
-            return res.json({ erro: true, mensagem: turno === '2' ? 'Não houve 2º turno para este cargo neste estado.' : 'Dados não encontrados no TSE para esta consulta.' });
+            return res.json({
+                erro: true,
+                mensagem: turno === '2'
+                    ? 'Não houve 2º turno para este cargo neste estado.'
+                    : 'Dados não encontrados no TSE para esta consulta.'
+            });
         }
 
-        if (!response.ok) throw new Error(`Erro na API do TSE: Status ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Erro na API do TSE: ${response.status}`);
+        }
 
         const data = await response.json();
 
         if (!data.cand || data.cand.length === 0) {
-            return res.json({ erro: true, mensagem: 'Nenhum candidato encontrado para este cargo/turno.' });
+            return res.json({
+                erro: true,
+                mensagem: 'Nenhum candidato encontrado para este cargo/turno.'
+            });
         }
 
         let todosCandidatos = data.cand.map(c => ({
@@ -59,10 +64,12 @@ app.get('/api/apuracao', async (req, res) => {
 
         todosCandidatos.sort((a, b) => b.votosNumero - a.votosNumero);
 
-        res.json({
-            turno, 
+        return res.status(200).json({
+            turno,
             percurso: data.pst || "0,00",
-            atualizacao: data.dg && data.hg ? `${data.dg} às ${data.hg}` : 'Sem dados de hora',
+            atualizacao: data.dg && data.hg
+                ? `${data.dg} às ${data.hg}`
+                : 'Sem dados de hora',
             resumo: {
                 validos: data.vv ? parseInt(data.vv).toLocaleString('pt-BR') : '--',
                 pctValidos: data.pvv || '0,00',
@@ -78,17 +85,10 @@ app.get('/api/apuracao', async (req, res) => {
 
     } catch (e) {
         console.error('Erro:', e.message);
-        res.status(500).json({ erro: true, mensagem: 'Servidor indisponível.' });
+
+        return res.status(500).json({
+            erro: true,
+            mensagem: 'Servidor indisponível.'
+        });
     }
-});
-
-// 3. Rota Fallback: Qualquer acesso que não seja API carrega o Front-end
-app.get('*', (req, res) => {
-    res.sendFile(path.join(pastaFront, 'index.html'));
-});
-
-// 4. Inicia o Servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
+}
