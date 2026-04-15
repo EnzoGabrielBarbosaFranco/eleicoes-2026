@@ -397,20 +397,7 @@
         </div>
     </div>
 
-  <script>
-    function toggleResumo() {
-        const bloco = document.getElementById('bloco-resumo');
-        const txt = document.getElementById('txt-toggle');
-        
-        bloco.classList.toggle('oculto');
-        
-        if (bloco.classList.contains('oculto')) {
-            txt.innerText = '▾ Ver brancos, nulos e abstenções';
-        } else {
-            txt.innerText = '▴ Ocultar brancos, nulos e abstenções';
-        }
-    }
-
+    <script>
     async function atualizarApuracao() {
         const selectTurno = document.getElementById('select-turno');
         const selectCargo = document.getElementById('select-cargo');
@@ -422,6 +409,7 @@
         const cargo = selectCargo.value;
         let uf = selectUf.value;
         
+        // Regra de bloqueio de UF
         if (cargo === '1') {
             selectUf.value = 'br'; 
             uf = 'br';
@@ -434,69 +422,104 @@
             }
         }
 
-        try {
-            document.getElementById('ultima-atualizacao').innerText = "(Atualizando...)";
-            const url = `/api/apuracao?turno=${turno}&cargo=${cargo}&uf=${uf}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Erro na comunicação com a API: ${response.status}`);
-            }
-            const data = await response.json();
+        document.getElementById('ultima-atualizacao').innerText = "Conectando diretamente ao TSE...";
+        const lista = document.getElementById('lista-candidatos');
+        lista.innerHTML = '<div class="loading-overlay">Baixando novos dados...</div>';
 
-            if (data.erro) {
-                document.getElementById('txt-percurso').innerText = "0%";
-                document.getElementById('barra-percurso').style.width = "0%";
-                document.getElementById('ultima-atualizacao').innerText = ""; 
-                document.getElementById('lista-candidatos').innerHTML = `<p style="text-align:center; padding:10px; font-weight:bold; color:#d63031; font-size:0.8rem;">${data.mensagem}</p>`;
+        // Lógica de URL puxada da antiga API direto pro Front-end
+        let eleicao = '544';
+        if (cargo === '1') {
+            eleicao = (turno === '2') ? '545' : '544';
+        } else {
+            eleicao = (turno === '2') ? '547' : '546';
+        }
+
+        const cargoFormatado = String(cargo).padStart(4, '0');
+        const ufFormatada = uf.toLowerCase();
+        
+        // Busca direto da CDN do TSE (Não passa mais pela Vercel)
+        const url = `https://resultados.tse.jus.br/oficial/ele2022/${eleicao}/dados-simplificados/${ufFormatada}/${ufFormatada}-c${cargoFormatado}-e000${eleicao}-r.json`;
+
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store', // Evita que o navegador mostre dados velhos
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.status === 404) {
+                mostrarErro(turno === '2' ? 'Não houve 2º turno para este cargo neste estado.' : 'Dados não encontrados no TSE para esta consulta.');
                 return;
             }
 
-            let percursoCss = data.percurso.replace(',', '.'); 
-            document.getElementById('barra-percurso').style.width = `${percursoCss}%`;
+            if (!response.ok) {
+                throw new Error(`Erro na comunicação com o TSE: ${response.status}`);
+            }
 
-            let textoPercurso = data.percurso.endsWith(',00') 
-                ? data.percurso.replace(',00', '') 
-                : data.percurso;
+            const data = await response.json();
+
+            if (!data.cand || data.cand.length === 0) {
+                mostrarErro('Nenhum candidato encontrado para este cargo/turno.');
+                return;
+            }
+
+            // --- ATUALIZA A INTERFACE ---
+
+            // Progresso
+            let percursoCss = (data.pst || "0,00").replace(',', '.'); 
+            document.getElementById('barra-percurso').style.width = `${percursoCss}%`;
             
+            let textoPercurso = (data.pst || "0,00").endsWith(',00') 
+                ? data.pst.replace(',00', '') 
+                : data.pst;
             document.getElementById('txt-percurso').innerText = `${textoPercurso}%`;
             
-            // Extrai apenas a hora para ficar bem curto no topo: ex "(12:07)"
-            let horaCurta = data.atualizacao.split('às')[1] ? data.atualizacao.split('às')[1].trim().substring(0, 5) : data.atualizacao;
-            document.getElementById('ultima-atualizacao').innerText = `(${horaCurta})`;
+            document.getElementById('ultima-atualizacao').innerText = data.dg && data.hg ? `Atualizado em: ${data.dg} às ${data.hg}` : 'Atualizado';
 
-            // Injeta os votos no resumo oculto
-            document.getElementById('votos-validos').innerText = `${data.resumo.pctValidos}%`;
-            document.getElementById('votos-brancos').innerText = `${data.resumo.pctBrancos}%`;
-            document.getElementById('votos-nulos').innerText = `${data.resumo.pctNulos}%`;
-            document.getElementById('votos-abstencoes').innerText = `${data.resumo.pctAbstencoes}%`;
+            // Resumo de Votos
+            document.getElementById('votos-validos').innerText = `${data.vv ? parseInt(data.vv).toLocaleString('pt-BR') : '--'}\n(${data.pvv || '0,00'}%)`;
+            document.getElementById('votos-brancos').innerText = `${data.vb ? parseInt(data.vb).toLocaleString('pt-BR') : '--'}\n(${data.pvb || '0,00'}%)`;
+            document.getElementById('votos-nulos').innerText = `${data.tvn ? parseInt(data.tvn).toLocaleString('pt-BR') : '--'}\n(${data.ptvn || '0,00'}%)`;
+            document.getElementById('votos-abstencoes').innerText = `${data.a ? parseInt(data.a).toLocaleString('pt-BR') : '--'}\n(${data.pa || '0,00'}%)`;
 
-            let candidatosParaRenderizar = [...data.candidatos];
+            // Mapeia e Ordena Candidatos
+            let candidatos = data.cand.map(c => ({
+                sqcand: c.sqcand,
+                nome: c.nm,
+                partido: c.cc,
+                votos: c.pvap.replace(',', '.'),
+                votosNumero: parseInt(c.vap) || 0,
+                total: parseInt(c.vap).toLocaleString('pt-BR'),
+                eleito: c.e === 's' || c.e === 'S',
+                segundoTurno: c.e === '2t' || c.e === '2T',
+                foto: `https://resultados.tse.jus.br/oficial/ele2022/${eleicao}/fotos/${ufFormatada}/${c.sqcand}.jpeg`
+            }));
 
+            candidatos.sort((a, b) => b.votosNumero - a.votosNumero);
+
+            // Verifica 2º Turno (Simulação Frontend)
             if (turno === '1' && (cargo === '1' || cargo === '3')) {
-                const temAlguemEleito = candidatosParaRenderizar.some(c => c.eleito);
-                const apiJaMarcouSegundoTurno = candidatosParaRenderizar.some(c => c.segundoTurno);
+                const temAlguemEleito = candidatos.some(c => c.eleito);
+                const apiJaMarcouSegundoTurno = candidatos.some(c => c.segundoTurno);
                 
-                if (!temAlguemEleito && !apiJaMarcouSegundoTurno && candidatosParaRenderizar.length >= 2) {
-                    const top2 = candidatosParaRenderizar.slice(0, 2);
-                    top2.sort((a, b) => a.nome.localeCompare(b.nome));
-                    top2[0].passouTurno = true;
-                    top2[1].passouTurno = true;
-                    candidatosParaRenderizar = [...top2, ...candidatosParaRenderizar.slice(2)];
+                if (!temAlguemEleito && !apiJaMarcouSegundoTurno && candidatos.length >= 2) {
+                    candidatos[0].passouTurno = true;
+                    candidatos[1].passouTurno = true;
                 }
             }
 
-            const lista = document.getElementById('lista-candidatos');
+            // Renderiza na tela
             lista.innerHTML = ''; 
-
-            candidatosParaRenderizar.forEach(cand => {
+            candidatos.forEach(cand => {
                 let badgeHTML = '';
                 let percentualVotos = parseFloat(cand.votos);
 
                 if (turno === '1' && (cargo === '1' || cargo === '3')) {
                     if (cand.eleito && percentualVotos > 50) {
-                        badgeHTML = '<span class="eleito-badge badge-verde">Eleito 1º T</span>';
+                        badgeHTML = '<span class="eleito-badge badge-verde">Eleito no 1º Turno</span>';
                     } else if (cand.segundoTurno || cand.passouTurno || (cand.eleito && percentualVotos <= 50)) {
-                        badgeHTML = '<span class="eleito-badge badge-amarelo">Vai p/ 2º T</span>';
+                        badgeHTML = '<span class="eleito-badge badge-amarelo">Vai para o 2º Turno</span>';
                     }
                 } else {
                     if (cand.eleito) {
@@ -511,7 +534,7 @@
                                 <div class="foto-container">
                                     <img src="${cand.foto}" 
                                         class="foto-cand" 
-                                        onerror="this.src='https://via.placeholder.com/40?text=👤'" 
+                                        onerror="this.src='https://via.placeholder.com/50?text=👤'" 
                                         alt="${cand.nome}">
                                 </div>
                                 <div class="info-textos">
@@ -534,8 +557,15 @@
 
         } catch (error) {
             console.error("Erro no Front-end:", error);
-            document.getElementById('ultima-atualizacao').innerText = "(Erro)";
+            mostrarErro("Erro ao se comunicar com o TSE. A rede pode estar congestionada.");
         }
+    }
+
+    function mostrarErro(mensagem) {
+        document.getElementById('txt-percurso').innerText = "0%";
+        document.getElementById('barra-percurso').style.width = "0%";
+        document.getElementById('ultima-atualizacao').innerText = "Falha na leitura"; 
+        document.getElementById('lista-candidatos').innerHTML = `<p style="text-align:center; padding:20px; font-weight:bold; color:#d63031;">${mensagem}</p>`;
     }
 
     function sugerirLocalizacao() {
